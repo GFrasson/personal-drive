@@ -22,6 +22,8 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    volumes:
+      - ./${UPLOAD_DIR}:/app/${UPLOAD_DIR}
 
 networks:
   app_net:
