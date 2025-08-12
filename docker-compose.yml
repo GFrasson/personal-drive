@@ -1,0 +1,32 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: personal-drive
+    env_file:
+      - .env
+    ports:
+      - "3456:3456"
+    environment:
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+      - PORT=3456
+    networks:
+      app_net:
+        ipv4_address: 172.20.0.10
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3456"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+networks:
+  app_net:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16
+
