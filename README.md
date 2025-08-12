@@ -1,36 +1,91 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+### Personal Drive
 
-## Getting Started
+Aplicação Next.js para gerenciar arquivos localmente (listar, enviar, criar pastas, excluir e baixar), protegida por autenticação simples para administrador.
 
-First, run the development server:
+### Requisitos
+
+- Node.js 20+ e npm 10+ (para executar sem Docker)
+- Docker e Docker Compose (opcional, para executar via containers)
+
+### Variáveis de ambiente
+
+Crie um arquivo `.env` na raiz do projeto com as variáveis abaixo. Valores padrão são seguros para desenvolvimento, mas altere para produção.
+
+| Variável | Descrição | Padrão (dev) |
+|---|---|---|
+| `AUTH_SECRET` | Segredo usado para assinar o JWT de sessão | `dev-secret-change` |
+| `ADMIN_USER` | Usuário administrador | `admin` |
+| `ADMIN_PASS` | Senha do administrador | `admin` |
+| `UPLOAD_DIR` | Diretório (relativo à raiz do projeto ou absoluto) onde os arquivos serão armazenados | `uploads` |
+
+Exemplo de `.env`:
+
+```env
+AUTH_SECRET=troque-este-segredo
+ADMIN_USER=admin
+ADMIN_PASS=admin
+UPLOAD_DIR=uploads
+```
+
+### Executando com Docker (recomendado para produção)
+
+1) Garanta que o `.env` exista na raiz do projeto.
+
+2) Suba os serviços:
+
+```bash
+docker compose up -d --build
+```
+
+3) Acesse a aplicação em `http://localhost:3456`.
+
+4) Faça login com `ADMIN_USER` e `ADMIN_PASS` definidos no `.env`.
+
+Comandos úteis:
+
+```bash
+# Ver logs
+docker compose logs -f
+
+# Reiniciar após alterações
+docker compose up -d --build
+
+# Parar e remover containers
+docker compose down
+```
+
+### Executando sem Docker
+
+1) Instale as dependências:
+
+```bash
+npm ci
+```
+
+2) Desenvolvimento (hot reload em `http://localhost:3000`):
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+3) Produção (build + start):
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run build
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+npm run start
+```
 
-## Learn More
+Abra `http://localhost:3000` (ou a porta que configurar)
 
-To learn more about Next.js, take a look at the following resources:
+### Endereços úteis
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Aplicação: `/` (após login)
+- Login: `/login`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Scripts disponíveis
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `npm run dev`: inicia em modo desenvolvimento (Turbopack)
+- `npm run build`: gera o build de produção
+- `npm run start`: inicia o servidor de produção (usa `PORT` se definida)
+- `npm run lint`: executa o linter
