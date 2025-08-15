@@ -11,17 +11,15 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
-} from "@/components/ui/dialog";
+
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { MoreVertical, UploadCloud, FolderPlus, ChevronRight, Home } from "lucide-react";
+
+import { MoreVertical, UploadCloud, ChevronRight, Home } from "lucide-react";
 import { toast } from "sonner";
-import { getFiles, uploadFiles, deleteItem, downloadFile, createFolder } from "@/lib/api";
+import { getFiles, uploadFiles, deleteItem, downloadFile } from "@/lib/api";
 import { getIconForFile } from "@/lib/icons";
 import { FileData } from "@/app/api/files/[[...path]]/route";
+import { CreateFolderDialog } from "./CreateFolderDialog";
 
 function formatBytes(bytes: number, decimals = 2) {
   if (bytes === 0) {
@@ -41,8 +39,6 @@ export function FileBrowser() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ name: string; isDirectory: boolean } | null>(null);
-  const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
-  const [newFolderName, setNewFolderName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchFiles = async () => {
@@ -59,7 +55,7 @@ export function FileBrowser() {
 
   useEffect(() => {
     fetchFiles();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPath]);
 
   const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -102,20 +98,6 @@ export function FileBrowser() {
     }
   };
 
-  const handleCreateFolder = async () => {
-    if (!newFolderName) return;
-    try {
-      await createFolder(newFolderName, currentPath);
-      toast.success(`Pasta "${newFolderName}" criada.`);
-      fetchFiles();
-    } catch {
-      toast.error(`Não foi possível criar a pasta ${newFolderName}`);
-    } finally {
-      setNewFolderName("");
-      setIsCreateFolderOpen(false);
-    }
-  };
-
   const handleNavigate = (folderName: string) => {
     setCurrentPath([...currentPath, folderName]);
   };
@@ -129,22 +111,10 @@ export function FileBrowser() {
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-semibold">My Drive</h1>
         <div className="flex gap-2">
-          <Dialog open={isCreateFolderOpen} onOpenChange={setIsCreateFolderOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline"><FolderPlus className="mr-2 h-4 w-4" />Criar pasta</Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader><DialogTitle>Criar nova pasta</DialogTitle><DialogDescription>Digite um nome para sua nova pasta.</DialogDescription></DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">Nome</Label>
-                  <Input id="name" value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} className="col-span-3" />
-                </div>
-              </div>
-              <DialogFooter><Button onClick={handleCreateFolder}>Criar</Button></DialogFooter>
-            </DialogContent>
-          </Dialog>
-          <Button onClick={() => fileInputRef.current?.click()}><UploadCloud className="mr-2 h-4 w-4" />Upload</Button>
+          <CreateFolderDialog currentPath={currentPath} onFolderCreate={fetchFiles} />
+          <Button onClick={() => fileInputRef.current?.click()}>
+            <UploadCloud className="mr-2 h-4 w-4" />Upload
+          </Button>
           <input type="file" ref={fileInputRef} onChange={handleUpload} className="hidden" multiple />
         </div>
       </div>
@@ -161,30 +131,71 @@ export function FileBrowser() {
 
       <div className="border rounded-lg">
         <Table>
-          <TableHeader><TableRow><TableHead className="w-[40px]"></TableHead><TableHead>Nome</TableHead><TableHead>Tamanho</TableHead><TableHead>Última modificação</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[40px]"></TableHead>
+              <TableHead>Nome</TableHead>
+              <TableHead>Tamanho</TableHead>
+              <TableHead>Última modificação</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={5} className="text-center">Carregando arquivos...</TableCell></TableRow>
+              <TableRow>
+                <TableCell colSpan={5} className="text-center">Carregando arquivos...</TableCell>
+              </TableRow>
             ) : files.length > 0 ? (
               files.map((file) => (
-                <TableRow key={file.name} onDoubleClick={() => file.isDirectory && handleNavigate(file.name)} className={file.isDirectory ? 'cursor-pointer' : ''}>
-                  <TableCell>{getIconForFile(file.name, file.isDirectory)}</TableCell>
-                  <TableCell className="font-medium" onClick={() => file.isDirectory && handleNavigate(file.name)}>{file.name}</TableCell>
-                  <TableCell>{file.isDirectory ? "-" : formatBytes(file.size)}</TableCell>
-                  <TableCell>{new Date(file.lastModified).toLocaleDateString()}</TableCell>
+                <TableRow
+                  key={file.name}
+                  onDoubleClick={() => file.isDirectory && handleNavigate(file.name)}
+                  className={file.isDirectory ? 'cursor-pointer' : ''}
+                >
+                  <TableCell>
+                    {getIconForFile(file.name, file.isDirectory)}
+                  </TableCell>
+                  <TableCell className="font-medium" onClick={() => file.isDirectory && handleNavigate(file.name)}>
+                    {file.name}
+                  </TableCell>
+                  <TableCell>
+                    {file.isDirectory ? "-" : formatBytes(file.size)}
+                  </TableCell>
+                  <TableCell>
+                    {new Date(file.lastModified).toLocaleDateString()}
+                  </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><span className="sr-only">Abrir menu</span><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <span className="sr-only">Abrir menu</span>
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        {!file.isDirectory && <DropdownMenuItem onClick={() => handleDownload(file.name)}>Download</DropdownMenuItem>}
-                        <DropdownMenuItem className="text-red-500" onClick={() => { setItemToDelete({ name: file.name, isDirectory: file.isDirectory }); setIsDeleteDialogOpen(true); }}>Deletar</DropdownMenuItem>
+                        {!file.isDirectory && 
+                          <DropdownMenuItem onClick={() => handleDownload(file.name)}>
+                            Download
+                          </DropdownMenuItem>
+                        }
+                        <DropdownMenuItem
+                          className="text-red-500"
+                          onClick={() => {
+                            setItemToDelete({ name: file.name, isDirectory: file.isDirectory });
+                            setIsDeleteDialogOpen(true); 
+                          }}
+                        >
+                          Deletar
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))
             ) : (
-              <TableRow className="h-14"><TableCell colSpan={5} className="text-center">Nenhum arquivo encontrado</TableCell></TableRow>
+              <TableRow className="h-14">
+                <TableCell colSpan={5} className="text-center">Nenhum arquivo encontrado</TableCell>
+              </TableRow>
             )}
           </TableBody>
         </Table>
@@ -192,8 +203,16 @@ export function FileBrowser() {
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Você tem certeza?</AlertDialogTitle><AlertDialogDescription>Essa ação não pode ser desfeita. <span className="font-bold">{itemToDelete?.name}</span> será deletado permanentemente.</AlertDialogDescription></AlertDialogHeader>
-          <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={handleDeleteConfirm}>Confirmar</AlertDialogAction></AlertDialogFooter>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Essa ação não pode ser desfeita. <span className="font-bold">{itemToDelete?.name}</span> será deletado permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm}>Confirmar</AlertDialogAction>
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>
