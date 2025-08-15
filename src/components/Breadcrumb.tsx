@@ -1,3 +1,5 @@
+"use client";
+
 import { ChevronRight, Home } from "lucide-react";
 
 interface BreadcrumbProps {
