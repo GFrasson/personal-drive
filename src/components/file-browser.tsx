@@ -14,12 +14,13 @@ import {
 
 import { Button } from "@/components/ui/button";
 
-import { MoreVertical, UploadCloud, ChevronRight, Home } from "lucide-react";
+import { MoreVertical, UploadCloud } from "lucide-react";
 import { toast } from "sonner";
 import { getFiles, uploadFiles, deleteItem, downloadFile } from "@/lib/api";
 import { getIconForFile } from "@/lib/icons";
 import { FileData } from "@/app/api/files/[[...path]]/route";
 import { CreateFolderDialog } from "./CreateFolderDialog";
+import { Breadcrumb } from "./Breadcrumb";
 
 function formatBytes(bytes: number, decimals = 2) {
   if (bytes === 0) {
@@ -102,10 +103,6 @@ export function FileBrowser() {
     setCurrentPath([...currentPath, folderName]);
   };
 
-  const handleBreadcrumbClick = (index: number) => {
-    setCurrentPath(currentPath.slice(0, index + 1));
-  };
-
   return (
     <div className="p-4 sm:p-6 md:p-8">
       <div className="flex justify-between items-center mb-4">
@@ -119,15 +116,7 @@ export function FileBrowser() {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-        <Home className="h-4 w-4 cursor-pointer" onClick={() => setCurrentPath([])} />
-        {currentPath.map((segment, index) => (
-          <div key={index} className="flex items-center gap-2">
-            <ChevronRight className="h-4 w-4" />
-            <span className="cursor-pointer hover:underline" onClick={() => handleBreadcrumbClick(index)}>{segment}</span>
-          </div>
-        ))}
-      </div>
+      <Breadcrumb onClick={setCurrentPath} currentPath={currentPath} />
 
       <div className="border rounded-lg">
         <Table>
