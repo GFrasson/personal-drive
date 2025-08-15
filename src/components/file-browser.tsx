@@ -2,20 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-
 import { Button } from "@/components/ui/button";
 
 import { UploadCloud } from "lucide-react";
 import { toast } from "sonner";
-import { getFiles, uploadFiles, deleteItem } from "@/lib/api";
+import { getFiles, uploadFiles } from "@/lib/api";
 import { FileData } from "@/app/api/files/[[...path]]/route";
 import { CreateFolderDialog } from "./CreateFolderDialog";
 import { Breadcrumb } from "./Breadcrumb";
 import { FilesTable, ItemToDelete } from "./FilesTable";
+import { DeleteItemDialog } from "./DeleteItemDialog";
 
 export function FileBrowser() {
   const [currentPath, setCurrentPath] = useState<string[]>([]);
@@ -56,23 +52,6 @@ export function FileBrowser() {
     }
   };
 
-  const handleDeleteConfirm = async () => {
-    if (!itemToDelete) {
-      return;
-    }
-
-    try {
-      await deleteItem(itemToDelete.name, itemToDelete.isDirectory, currentPath);
-      toast.success(`"${itemToDelete.name}" deletado.`);
-      fetchFiles();
-    } catch {
-      toast.error(`Não foi possível deletar "${itemToDelete.name}".`);
-    } finally {
-      setItemToDelete(null);
-      setIsDeleteDialogOpen(false);
-    }
-  };
-
   const handleClickToDelete = (item: ItemToDelete) => {
     setItemToDelete(item);
     setIsDeleteDialogOpen(true);
@@ -103,20 +82,17 @@ export function FileBrowser() {
         />
       </div>
 
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Essa ação não pode ser desfeita. <span className="font-bold">{itemToDelete?.name}</span> será deletado permanentemente.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm}>Confirmar</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteItemDialog
+        currentPath={currentPath}
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        itemToDelete={itemToDelete}
+        onDeleteConfirm={fetchFiles}
+        onDeleteConfirmEnd={() => {
+          setItemToDelete(null);
+          setIsDeleteDialogOpen(false);
+        }}
+      />
     </div>
   );
 }
